@@ -71,6 +71,34 @@ trait TestsAuthHelperTrait
             : $this->createTestingUser($userDetails, $access);
     }
 
+    /**
+     * Login as a current testing user from the user table.
+     *
+     * @param string|null $userId
+     * @param array|null $access roles and permissions you'd like to provide this user with
+     * @param bool $createUserAsAdmin should create testing user as admin
+     * @return mixed
+     */
+    public function loginAsTestingUser(?string $userId, ?array $access = null, bool $createUserAsAdmin = false)
+    {
+        $this->createUserAsAdmin = $createUserAsAdmin;
+        $this->userClass = $this->userclass ?? Config::get('apiato.tests.user-class');
+        $this->userAdminState = Config::get('apiato.tests.user-admin-state');
+
+        // login user
+        $userClass = str_replace('::class', '', $this->userClass);
+        $user = $userClass::find($userId);
+
+        // assign user roles and permissions based on the access property
+        $user = $this->setupTestingUserAccess($user, $access);
+
+        // authentication the user
+        $this->actingAs($user, 'api');
+
+        // set the created user
+        return $this->testingUser = $user;
+    }
+
     private function findOrCreateTestingUser($userDetails, $access)
     {
         return $this->testingUser ?: $this->createTestingUser($userDetails, $access);
